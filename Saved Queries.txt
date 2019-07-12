@@ -1,0 +1,166 @@
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM 'file:///BOM-DATA-Testing-1.csv' AS row
+WITH row, toInteger(row["ITEM NUMBER"]) AS partId, toInteger(row['HEADER REFERENCE']) as parentId, toInteger(row.QUANTITY) as qty
+MERGE (part:Part {partId:partId})
+SET
+	part.plantCode=row['PLANT CODE'],
+    part.startDate=row['START DATE'],
+    part.endDate=row['END DATE']
+WITH part, parentId, qty
+WHERE parentId > 0
+MERGE (parent:Part {partId:parentId})
+MERGE (parent)-[r:HAS_PART]->(part)
+SET
+	r.quantity=qty
+	
+	
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM 'file:///BOM-DATA-Testing-2.csv' AS row
+WITH row, toInteger(row["ITEM NUMBER"]) AS partId, toInteger(row['HEADER REFERENCE']) as parentId, toInteger(row.QUANTITY) as qty,toDouble(row.COST) as cost
+MERGE (part:Part {partId:partId})
+SET
+	part.procurementType=row['PROCUREMENT TYPE'],
+    part.uom=row.UOM,
+	part.cost=cost
+MERGE (parent:Part {partId:parentId})
+MERGE (parent)-[r:HAS_PART]->(part)
+SET
+	r.quantity=qty
+
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM 'file:///BOM-DATA-Testing-2.csv' AS row
+WITH row, toInteger(row["ITEM NUMBER"]) AS partId, toInteger(row['HEADER REFERENCE']) as parentId, toInteger(row.QUANTITY) as qty,toFloat(row.COST) as cost
+MERGE (part:Part {partId:partId})
+SET
+	part.procurementType=row['PROCUREMENT TYPE'],
+    part.uom=row.UOM,
+	part.cost=cost
+MERGE (parent:Part {partId:parentId})
+MERGE (parent)-[r:HAS_PART]->(part)
+SET
+	r.quantity=qty
+	
+	
+	
+//Cost of a part
+MATCH path=(:Part {partId:17})-[*]->()
+WHERE last(nodes(path)).cost > 0
+WITH reverse(nodes(path)) as pathNodes
+UNWIND pathNodes as pathNode
+MATCH (pathNode)<-[r:HAS_PART]-()
+RETURN SUM(pathNode.cost * r.quantity)
+
+
+// Cost of All parts
+MATCH (part:Part)
+WHERE size((part)-->())>0
+WITH part
+MATCH path=(part)-[*]->()
+WHERE last(nodes(path)).cost > 0
+WITH part, reverse(nodes(path)) as pathNodes
+UNWIND pathNodes as pathNode
+MATCH (pathNode)<-[r:HAS_PART]-()
+RETURN part.partId, SUM(pathNode.cost * r.quantity)
+
+USING PERIODIC COMMIT 10000
+LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row
+MERGE (o:Order {orderId:toInteger(row.orderID)})
+SET o.date=row.orderDate, o.shipCountry=row.shipCountry
+
+USING PERIODIC COMMIT 10000
+LOAD CSV FROM 'file:///products.csv' AS row
+MERGE (p:Product {productId:toInteger(row[0])})
+SET p.name=row[1], p.price=toFloat(row[2])
+
+
+//ES Query1 
+
+CALL db.index.fulltext.queryNodes('product_name', "sir scones") YIELD node,score
+WITH node LIMIT 1
+MATCH p=()<-[*0..3]-(node)<-[*0..3]-()
+RETURN p 
+
+
+//ES Query2
+CALL db.index.fulltext.createNodeInde:@'product_name', ['Product'], ['name']) 
+
+//Puneeth Use case
+CALL db.index.fulltext.queryNodes('product_name', "sir scones") YIELD node,score
+WITH node LIMIT 1
+MATCH (n:Product {name:node.name})
+WITH n as node
+MATCH p=()-[*0..3]->(node)
+WITH p, node, length(camera) as pathSize
+ORDER BY pathSize DESC
+WITH p, node
+LIMIT 1
+WITH p, node
+MATCH (node)<--()-->(n)
+WITH p, collect(n) as peers
+RETURN p, peers 
+
+
+//My Local query 
+MATCH (part:Part)
+WHERE size((part)-->())>0
+WITH part
+MATCH path=(part)-[*]->()
+WHERE last(nodes(path)).cost > 0
+WITH part, reverse(nodes(path)) as pathNodes
+UNWIND pathNodes as pathNode
+MATCH (pathNode)<-[r:HAS_PART]-()
+RETURN part.partId, SUM(pathNode.cost * r.quantity)
+
+//Huz data query 
+LOAD CSV WITH HEADERS FROM 'file:///Huz_upload.csv' AS row
+WITH row.LEVEL_MEMBER_VALUE AS productName, row.LEVEL_MEMBER_CODE AS memberId,row.PARENT_LEVEL_MEMBER_VALUES AS parentId
+MERGE (member:Member {memberId:memberId}) 
+	SET member.name=productName
+WITH member, parentId
+WHERE parentId <> 'NA'
+MERGE (parent:Member {memberId:parentId})
+MERGE (member)-[rel:CHILD_OF]->(parent)
+RETURN count(rel)
+
+
+//Supplier Deduplication Usecase
+
+USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "file:///datacsv1.csv" as row
+CREATE (s:Supplier)
+WITH s,row
+MERGE (n:Name {name:row['Supplier Name']})
+CREATE (s)-[:HAS_ATTRIBUTE]->(n)
+WITH s,row
+FOREACH(type in SPLIT(row['Supplier Category'], '~') |
+	MERGE (c:Category {type:type})
+    CREATE (s)-[:HAS_CATEGORY]->(c)
+)
+FOREACH( ignoreMe in CASE WHEN exists(row['Supplier Contact Email']) THEN [1] ELSE [] END |
+  MERGE (e:Email {email:row['Supplier Contact Email']})
+  CREATE (s)-[:HAS_ATTRIBUTE]->(e)
+)
+FOREACH( ignoreMe in CASE WHEN exists(row['Phone No']) THEN [1] ELSE [] END |
+  MERGE (p:Phone {number:row['Phone No']})
+  CREATE (s)-[:HAS_ATTRIBUTE]->(p)
+)
+FOREACH( ignoreMe in CASE WHEN exists(row['Dun and Brad Number']) THEN [1] ELSE [] END |
+  MERGE (d:DUNS {duns:row['Dun and Brad Number']})
+  CREATE (s)-[:HAS_ATTRIBUTE]->(d)
+)
+
+
+
+LOAD CSV WITH HEADERS FROM "file:///C:/NEO4J_HOME/NEO4J_HOME/import/Req.csv" AS line 
+		Merge (n:Req {Req_id: line.RequisitionId}) 
+							ON CREATE SET n.Req_Name = line.DocumentName																	
+	Merge(m:Requestor {ReqName: line.RequestorName})							 								
+Merge(p:Onbehalf {OBOName: line.OBOName}) 	
+							MERGE(n)-[r:requested_by]->(m) MERGE(n)-[o:obo_by]-(p)
+
+
+LOAD CSV WITH HEADERS FROM "file:///C:/NEO4J_HOME/NEO4J_HOME/import/Stake.csv" AS line    
+with  line.StakeholderTypeDescription as relation  
+MATCH (n:Req {Req_id: line.DocumentCode}) 					
+WITH n as doc														Merge(m:user {Name: line.Contactname })							 										
+MERGE(doc)-[r:relation]->(m)
