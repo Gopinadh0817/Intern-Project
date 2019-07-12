@@ -1,0 +1,33 @@
+oogle is trying to change the game of the results and focus more on the user, as we’ve heard multiple 
+times before and seen it into action with its various updates and algorithm changes. 
+What do users want? What are they searching for? What do they need? What is the context of their search? 
+Search has changed dramatically over the years and that is natural.
+For instance, if you’re searching for “Batman” in October, most likely you’ll be shown websites selling Halloween costumes.
+If you’re searching for “Batman” while you are in Turkey, you will probably be redirected to info related to the city of Batman. 
+For a long period of time, content was considered king. At this moment, context is king, 
+The contextual results are based on the user intent.
+When a piece of content is crafted, it is very important to take in mind the keywords related to the topic. 
+There might be various suggestions, depending on the user intent. 
+If you relate to those words, it will help you match context with content and identify numerous content ideas and offer personalized results to the user.
+If your content answers the user’questions and needs, it will probably rank in the top results. 
+
+ Y Graphs?  ---) In pdf Neo4j
+
+Conclusion)--- About the user experience.
+and neo4j adv,
+
+With Neo4j you can use best-of-breed technology as your applications dictate – whether that be a graph database or an Oracle relational database.
+ As the world’s first graph database built with native graph storage and processing(Millions of hops per second, in real time), Neo4j delivers unparalleled performance even as your data grows.
+The more data you have, the slower it becomes to relate data in other kinds of databases, including Oracle RDBMS.
+ Using Neo4j, a shortest path query on data with tens of billions of nodes and relationships might take one or two milliseconds to run.
+ The equivalent SQL query would run many thousands of times slower if an application was solely using an RDBMS such as Oracle.
+In an RDBMS, data relationship queries can be answered by creating JOINs between database tables.
+ However, these operations are compute- and memory-intensive, and the performance impact increases as data volumes grow.
+A graph database can analyze complex, connected data much faster and persist that analysis for future reference.
+
+Depth and density of connections and data volume impact query times significantly.
+ With Neo4j, you can query data with a depth of millions or tens of millions of connections per second per computer core,
+ which would be the equivalent in the relational database world of millions of JOIN operations per second per core, which is impossible.
+ There’s a big difference in speed, and this difference amplifies the tighter your connections are and the more data you have.
+
+T
